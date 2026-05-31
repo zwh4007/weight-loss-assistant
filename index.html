@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏃 减肥助手 - 热量计算 & 运动饮食建议</title>
+    <style>
+        :root {
+            --bg: #f0f4f3;
+            --card: #ffffff;
+            --primary: #2ecc71;
+            --primary-dark: #27ae60;
+            --accent: #e74c3c;
+            --text: #2c3e50;
+            --text-light: #7f8c8d;
+            --border: #e0e0e0;
+            --shadow: 0 4px 24px rgba(0,0,0,0.08);
+            --radius: 16px;
+            --highlight: #fff9e6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #e8f5e9 0%, #e3f2fd 50%, #fce4ec 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 32px 20px 20px;
+        }
+        .header .icon { font-size: 48px; margin-bottom: 8px; }
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header p { color: var(--text-light); margin-top: 4px; font-size: 14px; }
+
+        /* Cards */
+        .card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 28px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Form */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        @media (max-width: 500px) { .form-grid { grid-template-columns: 1fr; } }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group.full { grid-column: 1 / -1; }
+        .form-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-light);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .form-group input, .form-group select {
+            padding: 12px 14px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 15px;
+            transition: border-color 0.2s;
+            font-family: inherit;
+            background: #fafafa;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #fff;
+        }
+        .unit { color: var(--text-light); font-size: 12px; margin-left: 4px; }
+
+        /* Gender toggle */
+        .gender-toggle {
+            display: flex;
+            gap: 10px;
+        }
+        .gender-toggle button {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: #fafafa;
+            cursor: pointer;
+            font-size: 15px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        .gender-toggle button.active-male {
+            background: #e3f2fd;
+            border-color: #2196f3;
+            color: #1565c0;
+            font-weight: 600;
+        }
+        .gender-toggle button.active-female {
+            background: #fce4ec;
+            border-color: #e91e63;
+            color: #c62828;
+            font-weight: 600;
+        }
+
+        /* Activity level */
+        .activity-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 8px;
+        }
+        .activity-grid button {
+            padding: 10px 8px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: #fafafa;
+            cursor: pointer;
+            font-size: 13px;
+            font-family: inherit;
+            transition: all 0.2s;
+            text-align: center;
+            line-height: 1.3;
+        }
+        .activity-grid button.active {
+            background: #e8f5e9;
+            border-color: var(--primary);
+            color: #1b5e20;
+            font-weight: 600;
+        }
+        .activity-grid button small { display: block; color: var(--text-light); font-weight: 400; }
+
+        /* Goal */
+        .goal-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        @media (max-width: 500px) { .goal-grid { grid-template-columns: 1fr 1fr; } }
+        .goal-grid button {
+            padding: 12px 8px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: #fafafa;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        .goal-grid button.active {
+            background: #fff3e0;
+            border-color: #ff9800;
+            color: #e65100;
+            font-weight: 600;
+        }
+
+        /* Primary button */
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s;
+            box-shadow: 0 4px 16px rgba(46, 204, 113, 0.3);
+            margin-top: 20px;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(46, 204, 113, 0.4); }
+        .btn-primary:active { transform: translateY(0); }
+
+        /* Results */
+        #results { display: none; }
+        #results.show { display: block; }
+
+        .result-hero {
+            text-align: center;
+            padding: 24px;
+            background: linear-gradient(135deg, #e8f5e9, #e3f2fd);
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+        }
+        .result-hero .big-number {
+            font-size: 56px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #27ae60, #2196f3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .result-hero .big-label { color: var(--text-light); font-size: 14px; margin-top: -4px; }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 16px;
+        }
+        @media (max-width: 500px) { .stats-row { grid-template-columns: 1fr; } }
+        .stat-item {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        .stat-item .stat-num { font-size: 22px; font-weight: 700; }
+        .stat-item .stat-label { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+        .stat-item.bmr .stat-num { color: #2196f3; }
+        .stat-item.tdee .stat-num { color: #ff9800; }
+        .stat-item.target .stat-num { color: #e74c3c; }
+
+        /* Macro bars */
+        .macro-section { margin-top: 20px; }
+        .macro-section h4 { font-size: 14px; margin-bottom: 10px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
+        .macro-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .macro-label { width: 50px; font-size: 13px; font-weight: 600; text-align: right; flex-shrink: 0; }
+        .macro-bar-bg { flex: 1; height: 10px; background: #eee; border-radius: 5px; overflow: hidden; }
+        .macro-bar-fill { height: 100%; border-radius: 5px; transition: width 0.6s ease; }
+        .macro-bar-fill.protein { background: linear-gradient(90deg, #e91e63, #f06292); }
+        .macro-bar-fill.carbs { background: linear-gradient(90deg, #ff9800, #ffb74d); }
+        .macro-bar-fill.fat { background: linear-gradient(90deg, #9c27b0, #ba68c8); }
+        .macro-val { width: 70px; font-size: 13px; font-weight: 600; text-align: left; flex-shrink: 0; }
+
+        /* Suggestion cards */
+        .suggestions-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        @media (max-width: 600px) { .suggestions-grid { grid-template-columns: 1fr; } }
+
+        .suggestion-card {
+            background: #fff;
+            border-radius: 14px;
+            padding: 20px;
+            border: 1px solid var(--border);
+        }
+        .suggestion-card h4 {
+            font-size: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .suggestion-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        .suggestion-card li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .suggestion-card li:last-child { border-bottom: none; }
+        .suggestion-card li::before {
+            content: '•';
+            color: var(--primary);
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .tip-box {
+            background: var(--highlight);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 12px;
+            font-size: 13px;
+            line-height: 1.6;
+            border-left: 4px solid #ffc107;
+        }
+        .tip-box strong { color: #e65100; }
+
+        /* Meal example */
+        .meal-example {
+            background: #fafafa;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 12px;
+        }
+        .meal-example h5 { font-size: 13px; color: var(--text-light); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .meal-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 14px;
+            border-bottom: 1px solid #eee;
+        }
+        .meal-row:last-child { border-bottom: none; font-weight: 700; color: var(--primary-dark); }
+
+        /* Disclaimer */
+        .disclaimer {
+            text-align: center;
+            color: var(--text-light);
+            font-size: 12px;
+            padding: 16px;
+            line-height: 1.5;
+        }
+
+        .hidden { display: none !important; }
+
+        /* Pulse animation for result */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+        .pulse { animation: pulse 0.6s ease-in-out 2; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="icon">🏃</div>
+            <h1>减肥助手</h1>
+            <p>科学计算每日热量 · 个性化运动饮食建议</p>
+        </div>
+
+        <!-- Input Form -->
+        <div class="card" id="formCard">
+            <div class="card-title">📋 填写你的信息</div>
+
+            <!-- Gender -->
+            <div class="form-group full" style="margin-bottom:16px;">
+                <label>性别</label>
+                <div class="gender-toggle" id="genderToggle">
+                    <button onclick="setGender('male', this)" class="active-male" type="button">👨 男性</button>
+                    <button onclick="setGender('female', this)" type="button">👩 女性</button>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>年龄 <span class="unit">(岁)</span></label>
+                    <input type="number" id="age" placeholder="例如 30" min="10" max="120">
+                </div>
+                <div class="form-group">
+                    <label>身高 <span class="unit">(cm)</span></label>
+                    <input type="number" id="height" placeholder="例如 170" min="100" max="250" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label>当前体重 <span class="unit">(kg)</span></label>
+                    <input type="number" id="weight" placeholder="例如 75" min="30" max="300" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label>目标体重 <span class="unit">(kg)</span></label>
+                    <input type="number" id="targetWeight" placeholder="例如 65" min="30" max="300" step="0.1">
+                </div>
+            </div>
+
+            <!-- Activity Level -->
+            <div class="form-group full" style="margin-top:16px;">
+                <label>日常活动水平</label>
+                <div class="activity-grid" id="activityGrid">
+                    <button onclick="setActivity('sedentary', this)" type="button">🪑 久坐不动<br><small>几乎不运动</small></button>
+                    <button onclick="setActivity('light', this)" type="button">🚶 轻度活动<br><small>每周运动1-3天</small></button>
+                    <button onclick="setActivity('moderate', this)" type="button" class="active">🏋️ 中度活动<br><small>每周运动3-5天</small></button>
+                    <button onclick="setActivity('active', this)" type="button">🏃 高度活动<br><small>每周运动6-7天</small></button>
+                    <button onclick="setActivity('extreme', this)" type="button">🔥 极高强度<br><small>高强度体力劳动/训练</small></button>
+                </div>
+            </div>
+
+            <!-- Goal Speed -->
+            <div class="form-group full" style="margin-top:16px;">
+                <label>减重速度目标</label>
+                <div class="goal-grid" id="goalGrid">
+                    <button onclick="setGoal('mild', this)" type="button">🐢 温和<br><small>减0.25kg/周</small></button>
+                    <button onclick="setGoal('moderate', this)" type="button" class="active">🐇 适中<br><small>减0.5kg/周</small></button>
+                    <button onclick="setGoal('aggressive', this)" type="button">🚀 积极<br><small>减0.75kg/周</small></button>
+                    <button onclick="setGoal('maintain', this)" type="button">⚖️ 维持<br><small>保持体重</small></button>
+                </div>
+            </div>
+
+            <button class="btn-primary" onclick="calculate()">🔍 计算我的减肥计划</button>
+        </div>
+
+        <!-- Results -->
+        <div id="results">
+            <!-- Hero Result -->
+            <div class="result-hero pulse" id="resultHero">
+                <div class="big-label">🎯 每日目标热量摄入</div>
+                <div class="big-number" id="targetCalories">--</div>
+                <div class="big-label">千卡 / 天</div>
+            </div>
+
+            <!-- Stats -->
+            <div class="card">
+                <div class="card-title">📊 热量分析</div>
+                <div class="stats-row">
+                    <div class="stat-item bmr">
+                        <div class="stat-num" id="bmrVal">--</div>
+                        <div class="stat-label">基础代谢率 (BMR)</div>
+                        <div class="stat-label" style="font-size:11px;">维持生命所需最低热量</div>
+                    </div>
+                    <div class="stat-item tdee">
+                        <div class="stat-num" id="tdeeVal">--</div>
+                        <div class="stat-label">每日消耗 (TDEE)</div>
+                        <div class="stat-label" style="font-size:11px;">含日常活动与运动</div>
+                    </div>
+                    <div class="stat-item target">
+                        <div class="stat-num" id="deficitVal">--</div>
+                        <div class="stat-label">热量缺口</div>
+                        <div class="stat-label" style="font-size:11px;">每日需减少的热量</div>
+                    </div>
+                </div>
+                <div class="stats-row" style="margin-top:12px;">
+                    <div class="stat-item" style="border-color:#ffe0b2;">
+                        <div class="stat-num" style="color:#e65100;" id="totalLoss">--</div>
+                        <div class="stat-label">共需减重</div>
+                    </div>
+                    <div class="stat-item" style="border-color:#c8e6c9;">
+                        <div class="stat-num" style="color:#1b5e20;" id="estWeeks">--</div>
+                        <div class="stat-label">预计达成时间</div>
+                    </div>
+                </div>
+
+                <!-- Macro Distribution -->
+                <div class="macro-section">
+                    <h4>🥗 推荐营养素分配</h4>
+                    <div class="macro-row">
+                        <span class="macro-label">蛋白质</span>
+                        <div class="macro-bar-bg"><div class="macro-bar-fill protein" id="proteinBar" style="width:0%"></div></div>
+                        <span class="macro-val" id="proteinVal">--</span>
+                    </div>
+                    <div class="macro-row">
+                        <span class="macro-label">碳水</span>
+                        <div class="macro-bar-bg"><div class="macro-bar-fill carbs" id="carbsBar" style="width:0%"></div></div>
+                        <span class="macro-val" id="carbsVal">--</span>
+                    </div>
+                    <div class="macro-row">
+                        <span class="macro-label">脂肪</span>
+                        <div class="macro-bar-bg"><div class="macro-bar-fill fat" id="fatBar" style="width:0%"></div></div>
+                        <span class="macro-val" id="fatVal">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Suggestions -->
+            <div class="suggestions-grid">
+                <!-- Exercise -->
+                <div class="suggestion-card">
+                    <h4>🏋️ 运动建议</h4>
+                    <div id="exerciseList"></div>
+                    <div class="tip-box">
+                        <strong>💡 提示：</strong><span id="exerciseTip"></span>
+                    </div>
+                </div>
+                <!-- Diet -->
+                <div class="suggestion-card">
+                    <h4>🥗 饮食建议</h4>
+                    <div id="dietList"></div>
+                    <div class="tip-box">
+                        <strong>💡 提示：</strong><span id="dietTip"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sample Meal -->
+            <div class="card">
+                <div class="card-title">🍽️ 参考一日食谱</div>
+                <div id="mealPlan"></div>
+                <div class="tip-box">
+                    <strong>⚠️ 重要提醒：</strong> 本工具提供的建议仅供参考。在开始任何减重计划前，请咨询医生或注册营养师。每日热量摄入不应低于1200千卡（女性）或1500千卡（男性），除非有医生指导。
+                </div>
+            </div>
+        </div>
+
+        <div class="disclaimer">
+            ⚕️ 本工具使用 Mifflin-St Jeor 公式计算基础代谢率，仅供参考，不构成医疗建议。<br>
+            减重前请咨询专业医疗人员。
+        </div>
+    </div>
+
+    <script>
+        // State
+        let gender = 'male';
+        let activityLevel = 'moderate';
+        let goalSpeed = 'moderate';
+
+        const ACTIVITY_MULTIPLIERS = {
+            sedentary: 1.2,
+            light: 1.375,
+            moderate: 1.55,
+            active: 1.725,
+            extreme: 1.9
+        };
+
+        const ACTIVITY_LABELS = {
+            sedentary: '久坐不动',
+            light: '轻度活动',
+            moderate: '中度活动',
+            active: '高度活动',
+            extreme: '极高强度'
+        };
+
+        const GOAL_DEFICITS = {
+            mild: 275,      // ~0.25 kg/week
+            moderate: 550,  // ~0.5 kg/week
+            aggressive: 825,// ~0.75 kg/week
+            maintain: 0
+        };
+
+        const GOAL_LABELS = {
+            mild: '温和减重 (0.25kg/周)',
+            moderate: '适中减重 (0.5kg/周)',
+            aggressive: '积极减重 (0.75kg/周)',
+            maintain: '维持体重'
+        };
+
+        const CALORIES_PER_KG = 7700;
+
+        // Toggle functions
+        function setGender(val, btn) {
+            gender = val;
+            document.querySelectorAll('#genderToggle button').forEach(b => {
+                b.className = '';
+            });
+            btn.className = val === 'male' ? 'active-male' : 'active-female';
+        }
+
+        function setActivity(val, btn) {
+            activityLevel = val;
+            document.querySelectorAll('#activityGrid button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        function setGoal(val, btn) {
+            goalSpeed = val;
+            document.querySelectorAll('#goalGrid button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        // Main calculation
+        function calculate() {
+            const age = parseInt(document.getElementById('age').value);
+            const height = parseFloat(document.getElementById('height').value);
+            const weight = parseFloat(document.getElementById('weight').value);
+            const targetWeight = parseFloat(document.getElementById('targetWeight').value);
+
+            // Validation
+            const errors = [];
+            if (!age || age < 10 || age > 120) errors.push('请输入合理的年龄 (10-120岁)');
+            if (!height || height < 100 || height > 250) errors.push('请输入合理的身高 (100-250cm)');
+            if (!weight || weight < 30 || weight > 300) errors.push('请输入合理的当前体重 (30-300kg)');
+            if (!targetWeight || targetWeight < 30 || targetWeight > 300) errors.push('请输入合理的目标体重 (30-300kg)');
+            if (targetWeight >= weight) errors.push('目标体重应低于当前体重才能减重哦～如果希望增重请调整目标');
+
+            if (errors.length > 0) {
+                alert('请修正以下问题：\n\n' + errors.join('\n'));
+                return;
+            }
+
+            // BMR: Mifflin-St Jeor Equation
+            let bmr;
+            if (gender === 'male') {
+                bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+            } else {
+                bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+            }
+
+            const tdee = bmr * ACTIVITY_MULTIPLIERS[activityLevel];
+            const deficit = GOAL_DEFICITS[goalSpeed];
+            let targetCals = Math.round(tdee - deficit);
+
+            // Safety floor
+            const minCals = gender === 'male' ? 1500 : 1200;
+            if (targetCals < minCals) {
+                targetCals = minCals;
+            }
+
+            const totalLoss = weight - targetWeight;
+            const calDeficitTotal = totalLoss * CALORIES_PER_KG;
+            const dailyDeficit = deficit > 0 ? deficit : (tdee * 0.15); // If maintaining, show typical deficit
+            const estWeeks = deficit > 0 ? Math.ceil(totalLoss / (deficit / (CALORIES_PER_KG / 7))) : 0;
+            const estDays = estWeeks * 7;
+
+            // Macronutrients (higher protein for cutting)
+            const proteinG = Math.round(targetCals * 0.35 / 4); // 35% protein
+            const fatG = Math.round(targetCals * 0.25 / 9);     // 25% fat
+            const carbsG = Math.round(targetCals * 0.40 / 4);   // 40% carbs
+
+            // Update DOM
+            document.getElementById('targetCalories').textContent = targetCals;
+            document.getElementById('bmrVal').textContent = Math.round(bmr) + ' 千卡';
+            document.getElementById('tdeeVal').textContent = Math.round(tdee) + ' 千卡';
+            document.getElementById('deficitVal').textContent = Math.round(deficit > 0 ? deficit : tdee * 0.1) + ' 千卡';
+            document.getElementById('totalLoss').textContent = totalLoss.toFixed(1) + ' kg';
+            document.getElementById('estWeeks').textContent = estWeeks > 0 ? '约 ' + estWeeks + ' 周 (' + estDays + ' 天)' : '维持现状';
+
+            // Macro bars
+            const maxMacro = Math.max(proteinG, carbsG, fatG);
+            document.getElementById('proteinVal').textContent = proteinG + 'g (' + Math.round(targetCals * 0.35) + ' kcal)';
+            document.getElementById('carbsVal').textContent = carbsG + 'g (' + Math.round(targetCals * 0.40) + ' kcal)';
+            document.getElementById('fatVal').textContent = fatG + 'g (' + Math.round(targetCals * 0.25) + ' kcal)';
+            document.getElementById('proteinBar').style.width = (proteinG / maxMacro * 100) + '%';
+            document.getElementById('carbsBar').style.width = (carbsG / maxMacro * 100) + '%';
+            document.getElementById('fatBar').style.width = (fatG / maxMacro * 100) + '%';
+
+            // Exercise suggestions
+            generateExerciseSuggestions(tdee, deficit, weight);
+
+            // Diet suggestions
+            generateDietSuggestions(targetCals, proteinG);
+
+            // Meal plan
+            generateMealPlan(targetCals, proteinG, carbsG, fatG);
+
+            // Show results
+            document.getElementById('results').classList.add('show');
+            document.getElementById('resultHero').classList.add('pulse');
+            setTimeout(() => document.getElementById('resultHero').classList.remove('pulse'), 1200);
+
+            // Scroll to results
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function generateExerciseSuggestions(tdee, deficit, weight) {
+            const exercises = [];
+
+            if (deficit >= 550) {
+                exercises.push(
+                    '🏃 <strong>有氧运动：</strong>每周5-6次，每次30-45分钟。推荐跑步、游泳、跳绳、动感单车。',
+                    '🏋️ <strong>力量训练：</strong>每周3-4次，每次45分钟。重点做深蹲、硬拉、卧推等复合动作，保护肌肉不流失。',
+                    '🚶 <strong>日常活动：</strong>目标每日步数8000-10000步，多走楼梯，站立办公。',
+                    '🧘 <strong>恢复日：</strong>每周1-2天进行瑜伽、拉伸或轻松散步，帮助身体恢复。'
+                );
+            } else if (deficit >= 275) {
+                exercises.push(
+                    '🚴 <strong>有氧运动：</strong>每周3-5次，每次30分钟。快走、慢跑、骑车或游泳。',
+                    '🏋️ <strong>力量训练：</strong>每周2-3次，每次30-40分钟。以全身复合动作为主。',
+                    '🚶 <strong>日常活动：</strong>目标每日步数7000-9000步。',
+                    '🧘 <strong>灵活性：</strong>每周1-2次拉伸或瑜伽，预防运动损伤。'
+                );
+            } else {
+                exercises.push(
+                    '🚶 <strong>有氧运动：</strong>每周3次，每次30分钟快走或轻松骑车即可。',
+                    '🏋️ <strong>力量训练：</strong>每周2次，每次30分钟，保持肌肉量。',
+                    '🧘 <strong>活动：</strong>保持每日6000步以上，多做伸展运动。'
+                );
+            }
+
+            // Weight-based suggestions
+            if (weight > 90) {
+                exercises.push('⚠️ <strong>关节保护：</strong>体重较大时优先选择游泳、骑车、椭圆机等低冲击运动，减少跑步对膝盖的压力。');
+            }
+
+            document.getElementById('exerciseList').innerHTML = '<ul>' + exercises.map(e => '<li>' + e + '</li>').join('') + '</ul>';
+            document.getElementById('exerciseTip').textContent = deficit > 0
+                ? '运动时心率保持在最大心率(220-年龄)的60-75%，这是最佳燃脂区间。力量训练后补充20-30g蛋白质有助于肌肉恢复。'
+                : '保持现有运动习惯即可，重点在于规律性和持续性。';
+        }
+
+        function generateDietSuggestions(targetCals, proteinG) {
+            const tips = [
+                '🥩 <strong>蛋白质优先：</strong>每餐保证有优质蛋白来源——鸡胸肉、鱼虾、鸡蛋、豆腐、瘦牛肉。目标每日 ' + proteinG + 'g。',
+                '🥦 <strong>蔬菜不限量：</strong>绿叶蔬菜、西兰花、黄瓜、番茄热量极低，富含纤维，可以吃到饱。',
+                '🍚 <strong>主食选粗粮：</strong>用糙米、燕麦、红薯、藜麦替代白米饭和面食，升糖慢，饱腹感强。',
+                '💧 <strong>多喝水：</strong>每日饮水2-3升，饭前喝一杯水有助控制食量。避免含糖饮料和果汁。',
+                '🍳 <strong>烹饪方式：</strong>多用蒸、煮、烤、炖，少用煎炸。控制用油量，每天不超过25g。',
+                '🍎 <strong>加餐策略：</strong>两餐之间饿了可选希腊酸奶、一小把坚果（约15g）、一个苹果或蛋白棒。',
+                '🚫 <strong>尽量避开：</strong>奶茶、甜点、薯片、炸鸡、加工零食。这些食物热量密度高，饱腹感低。',
+                '📝 <strong>记录饮食：</strong>使用App记录每天摄入，了解食物热量。一周后你会更清楚自己在吃什么。'
+            ];
+
+            document.getElementById('dietList').innerHTML = '<ul>' + tips.map(t => '<li>' + t + '</li>').join('') + '</ul>';
+            document.getElementById('dietTip').textContent = '减重不是节食！每天保证' + targetCals + '千卡的营养摄入，吃对的食物比吃少更重要。睡眠不足会增加饥饿感，保证每晚7-8小时睡眠。';
+        }
+
+        function generateMealPlan(targetCals, proteinG, carbsG, fatG) {
+            // Scale meal to target calories
+            const scale = targetCals / 1800;
+
+            const breakfasts = [
+                { name: '燕麦鸡蛋早餐', items: [
+                    ['燕麦片 (煮)', Math.round(50 * scale) + 'g', Math.round(190 * scale)],
+                    ['水煮鸡蛋', '2个', 140],
+                    ['脱脂牛奶', Math.round(200 * scale) + 'ml', Math.round(70 * scale)],
+                    ['蓝莓/草莓', Math.round(80 * scale) + 'g', Math.round(40 * scale)]
+                ]},
+                { name: '全麦面包套餐', items: [
+                    ['全麦面包', '2片', 160],
+                    ['牛油果', '1/4个', 60],
+                    ['煎蛋 (少油)', '1个', 90],
+                    ['无糖豆浆', '250ml', 80]
+                ]}
+            ];
+
+            const lunchs = [
+                { name: '鸡胸肉蔬菜饭', items: [
+                    ['鸡胸肉 (蒸/煎)', Math.round(150 * scale) + 'g', Math.round(165 * scale)],
+                    ['糙米饭', Math.round(120 * scale) + 'g', Math.round(150 * scale)],
+                    ['西兰花 + 胡萝卜', '200g', 70],
+                    ['橄榄油 (拌菜)', '5ml', 45]
+                ]},
+                { name: '三文鱼藜麦碗', items: [
+                    ['三文鱼 (烤)', Math.round(120 * scale) + 'g', Math.round(250 * scale)],
+                    ['藜麦 (煮)', Math.round(80 * scale) + 'g', Math.round(100 * scale)],
+                    ['混合绿叶沙拉', '150g', 35],
+                    ['柠檬汁调味', '适量', 5]
+                ]}
+            ];
+
+            const dinners = [
+                { name: '清蒸鱼 + 豆腐', items: [
+                    ['鲈鱼/鳕鱼 (清蒸)', Math.round(120 * scale) + 'g', Math.round(130 * scale)],
+                    ['嫩豆腐', '100g', 65],
+                    ['炒青菜 (少油)', '200g', 70],
+                    ['红薯 (蒸)', Math.round(100 * scale) + 'g', Math.round(86 * scale)]
+                ]},
+                { name: '牛肉蔬菜汤', items: [
+                    ['瘦牛肉', Math.round(100 * scale) + 'g', Math.round(140 * scale)],
+                    ['番茄、洋葱、胡萝卜', '200g', 60],
+                    ['全麦面包', '1片', 80],
+                    ['清汤底', '1碗', 15]
+                ]}
+            ];
+
+            const snacks = [
+                { name: '加餐选择', items: [
+                    ['希腊酸奶', '150g', 100],
+                    ['杏仁/核桃', '15g', 90],
+                    ['苹果/香蕉', '1个', 80]
+                ]}
+            ];
+
+            const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+            const breakfast = pick(breakfasts);
+            const lunch = pick(lunchs);
+            const dinner = pick(dinners);
+            const snack = snacks[0];
+
+            const allMeals = [breakfast, lunch, dinner, snack];
+            const totalCals = allMeals.reduce((sum, m) => sum + m.items.reduce((s, i) => s + (i[2] || 0), 0), 0);
+
+            let html = '';
+            [breakfast, lunch, dinner, snack].forEach((meal, idx) => {
+                const mealCals = meal.items.reduce((s, i) => s + (i[2] || 0), 0);
+                const icons = ['🌅', '🌞', '🌙', '🍎'];
+                html += '<div class="meal-example">';
+                html += '<h5>' + icons[idx] + ' ' + meal.name + ' (约 ' + mealCals + ' 千卡)</h5>';
+                meal.items.forEach(item => {
+                    html += '<div class="meal-row"><span>' + item[0] + ' — ' + item[1] + '</span><span>' + item[2] + ' kcal</span></div>';
+                });
+                html += '</div>';
+            });
+
+            html += '<div class="meal-row" style="margin-top:8px; padding-top:8px; border-top:2px solid #ddd;">';
+            html += '<span>📊 一日总计（参考）</span><span>约 ' + totalCals + ' 千卡</span>';
+            html += '</div>';
+
+            document.getElementById('mealPlan').innerHTML = html;
+        }
+
+        // Enter key triggers calculation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && document.activeElement.tagName === 'INPUT') {
+                calculate();
+            }
+        });
+    </script>
+</body>
+</html>
